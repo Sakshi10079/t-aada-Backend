@@ -13,7 +13,7 @@ public interface BrandOwnerProfileRepository extends JpaRepository<BrandOwnerPro
     Optional<BrandOwnerProfile> findByUser(User user);
 
     @Query("""
-        SELECT new com.tadda.tadda_backend.dto.AdminBrandOwnerResponse(
+        SELECT new com.tadda.tadda_backend.dto.AdminBrandOwnerResponseDto(
             u.id,
             u.name,
             u.email,

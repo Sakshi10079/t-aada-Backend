@@ -12,7 +12,7 @@ import java.util.Optional;
 public interface RegistrationPaymentRepository extends JpaRepository<RegistrationPayment, Long> {
 
     @Query("""
-            SELECT new com.tadda.tadda_backend.dto.AdminRegistrationPaymentResponse(
+            SELECT new com.tadda.tadda_backend.dto.AdminRegistrationPaymentResponseDto(
                 p.id,
                 u.name,
                 u.email,
