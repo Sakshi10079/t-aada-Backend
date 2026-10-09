@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/razorpay").permitAll()
+                        .requestMatchers("/api/training/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/brand-owner/**").hasRole("BRAND_OWNER")
                         .anyRequest().authenticated()

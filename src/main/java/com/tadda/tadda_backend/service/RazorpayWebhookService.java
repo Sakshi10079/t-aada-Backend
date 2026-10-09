@@ -7,7 +7,10 @@ import com.razorpay.Utils;
 import com.tadda.tadda_backend.config.RazorpayConfig;
 import com.tadda.tadda_backend.entity.PaymentStatus;
 import com.tadda.tadda_backend.entity.RegistrationPayment;
+import com.tadda.tadda_backend.entity.TrainingBooking;
+import com.tadda.tadda_backend.entity.TrainingPaymentStatus;
 import com.tadda.tadda_backend.repository.RegistrationPaymentRepository;
+import com.tadda.tadda_backend.repository.TrainingBookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,7 @@ public class RazorpayWebhookService {
 
     private final RazorpayConfig razorpayConfig;
     private final RegistrationPaymentRepository registrationPaymentRepository;
+    private final TrainingBookingRepository trainingBookingRepository;
     private final ObjectMapper objectMapper;
 
     public boolean verifySignature(
@@ -64,28 +68,85 @@ public class RazorpayWebhookService {
                     return;
                 }
 
-                RegistrationPayment payment =
+                /*
+                 * First check whether this is a Brand Owner
+                 * registration payment.
+                 */
+                RegistrationPayment registrationPayment =
                         registrationPaymentRepository
                                 .findByRazorpayOrderId(razorpayOrderId)
                                 .orElse(null);
 
-                if (payment == null) {
+                if (registrationPayment != null) {
+
+                    if (registrationPayment.getStatus()
+                            == PaymentStatus.PAID) {
+                        return;
+                    }
+
+                    registrationPayment.setStatus(
+                            PaymentStatus.PAID
+                    );
+
+                    registrationPayment.setTransactionId(
+                            razorpayPaymentId
+                    );
+
+                    registrationPayment.setPaymentMethod(
+                            "RAZORPAY"
+                    );
+
+                    registrationPayment.setPaidAt(
+                            LocalDateTime.now()
+                    );
+
+                    registrationPaymentRepository.save(
+                            registrationPayment
+                    );
+
                     return;
                 }
 
-                if (payment.getStatus() == PaymentStatus.PAID) {
-                    return;
+                /*
+                 * If it wasn't a registration payment,
+                 * check whether it is a training booking.
+                 */
+                TrainingBooking trainingBooking =
+                        trainingBookingRepository
+                                .findByRazorpayOrderId(razorpayOrderId)
+                                .orElse(null);
+
+                if (trainingBooking != null) {
+
+                    if (trainingBooking.getPaymentStatus()
+                            == TrainingPaymentStatus.PAID) {
+                        return;
+                    }
+
+                    trainingBooking.setPaymentStatus(
+                            TrainingPaymentStatus.PAID
+                    );
+
+                    trainingBooking.setBookingStatus(
+                            com.tadda.tadda_backend.entity.TrainingBookingStatus.CONFIRMED
+                    );
+
+                    trainingBooking.setTransactionId(
+                            razorpayPaymentId
+                    );
+
+                    trainingBooking.setPaymentMethod(
+                            "RAZORPAY"
+                    );
+
+                    trainingBookingRepository.save(
+                            trainingBooking
+                    );
                 }
-
-                payment.setStatus(PaymentStatus.PAID);
-                payment.setTransactionId(razorpayPaymentId);
-                payment.setPaymentMethod("RAZORPAY");
-                payment.setPaidAt(LocalDateTime.now());
-
-                registrationPaymentRepository.save(payment);
             }
 
         } catch (Exception exception) {
+
             throw new RuntimeException(
                     "Failed to process Razorpay webhook",
                     exception
